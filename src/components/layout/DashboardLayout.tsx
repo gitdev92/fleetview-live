@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import AppSidebar from './AppSidebar';
 import Navbar from './Navbar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const DashboardLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState('car001');
+  const isMobile = useIsMobile();
+
+  const marginLeft = isMobile ? 0 : (sidebarCollapsed ? 72 : 240);
 
   return (
     <div className="h-screen flex overflow-hidden bg-background">
@@ -18,10 +21,9 @@ const DashboardLayout = () => {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      {/* Main content - marginLeft only on desktop */}
       <div
-        className="flex-1 flex flex-col min-h-0 w-full md:transition-[margin-left] md:duration-300"
-        style={{ marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? (sidebarCollapsed ? 72 : 240) : 0 }}
+        className="flex-1 flex flex-col min-h-0 w-full transition-[margin-left] duration-300"
+        style={{ marginLeft }}
       >
         <Navbar
           selectedVehicle={selectedVehicle}
