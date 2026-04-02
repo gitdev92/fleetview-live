@@ -13,7 +13,21 @@ const parseNumericField = (value) => {
   }
 
   const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : null;
+  if (Number.isFinite(parsedValue)) {
+    return parsedValue;
+  }
+
+  if (typeof value === 'string') {
+    const match = value.match(/-?\d+(?:\.\d+)?/);
+    if (!match) {
+      return null;
+    }
+
+    const extractedNumber = Number(match[0]);
+    return Number.isFinite(extractedNumber) ? extractedNumber : null;
+  }
+
+  return null;
 };
 
 const triggerGeofenceAlerts = async (vehicle, previousLocation, io) => {
