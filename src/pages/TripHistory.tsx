@@ -34,28 +34,51 @@ const TripHistory = () => {
   const center = selectedTrip.route_coordinates[Math.floor(selectedTrip.route_coordinates.length / 2)];
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Trip History</h1>
-        <p className="text-sm text-muted-foreground mt-1">View past vehicle trips</p>
+        <h1 className="text-xl md:text-2xl font-bold text-foreground">Trip History</h1>
+        <p className="text-xs md:text-sm text-muted-foreground mt-0.5">View past vehicle trips</p>
       </div>
 
-      {/* Date Selector */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
+      <div className="flex items-center gap-3">
+        <Calendar className="w-4 h-4 text-muted-foreground" />
+        <input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          className="px-3 py-2 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Trip List */}
-        <div className="space-y-3">
+      {/* Mobile: horizontal scroll trip cards, then map below */}
+      {/* Trip selector - horizontal on mobile, vertical sidebar on desktop */}
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:hidden snap-x">
+        {mockTrips.map((trip, i) => (
+          <motion.div
+            key={trip.id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.1 }}
+            onClick={() => setSelectedTrip(trip)}
+            className={`glass-card p-3 cursor-pointer transition-colors flex-shrink-0 w-[200px] snap-start ${
+              selectedTrip.id === trip.id ? 'border-primary/50' : 'hover:border-primary/20'
+            }`}
+          >
+            <p className="text-xs font-semibold text-foreground">{trip.vehicle}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {new Date(trip.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — {new Date(trip.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            <div className="flex gap-3 mt-1.5">
+              <span className="text-[11px] text-muted-foreground">{trip.distance} km</span>
+              <span className="text-[11px] text-muted-foreground">{trip.avg_speed} km/h</span>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        {/* Desktop Trip List */}
+        <div className="hidden lg:block space-y-3">
           {mockTrips.map((trip, i) => (
             <motion.div
               key={trip.id}
@@ -79,9 +102,9 @@ const TripHistory = () => {
           ))}
         </div>
 
-        {/* Map */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="glass-card overflow-hidden rounded-xl h-80">
+        {/* Map + Summary */}
+        <div className="lg:col-span-2 space-y-3 md:space-y-4">
+          <div className="glass-card overflow-hidden rounded-xl h-56 md:h-80">
             <MapContainer center={center} zoom={14} className="w-full h-full" key={selectedTrip.id}>
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -96,22 +119,21 @@ const TripHistory = () => {
             </MapContainer>
           </div>
 
-          {/* Trip Summary */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="glass-card p-4 text-center">
-              <RouteIcon className="w-5 h-5 text-primary mx-auto mb-2" />
-              <p className="text-lg font-bold text-foreground">{selectedTrip.distance} km</p>
-              <p className="text-xs text-muted-foreground">Distance</p>
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
+            <div className="glass-card p-3 md:p-4 text-center">
+              <RouteIcon className="w-4 h-4 md:w-5 md:h-5 text-primary mx-auto mb-1 md:mb-2" />
+              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip.distance} km</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Distance</p>
             </div>
-            <div className="glass-card p-4 text-center">
-              <Clock className="w-5 h-5 text-accent mx-auto mb-2" />
-              <p className="text-lg font-bold text-foreground">{duration}</p>
-              <p className="text-xs text-muted-foreground">Duration</p>
+            <div className="glass-card p-3 md:p-4 text-center">
+              <Clock className="w-4 h-4 md:w-5 md:h-5 text-accent mx-auto mb-1 md:mb-2" />
+              <p className="text-sm md:text-lg font-bold text-foreground">{duration}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Duration</p>
             </div>
-            <div className="glass-card p-4 text-center">
-              <Gauge className="w-5 h-5 text-warning mx-auto mb-2" />
-              <p className="text-lg font-bold text-foreground">{selectedTrip.avg_speed} km/h</p>
-              <p className="text-xs text-muted-foreground">Avg Speed</p>
+            <div className="glass-card p-3 md:p-4 text-center">
+              <Gauge className="w-4 h-4 md:w-5 md:h-5 text-warning mx-auto mb-1 md:mb-2" />
+              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip.avg_speed}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Avg km/h</p>
             </div>
           </div>
         </div>
