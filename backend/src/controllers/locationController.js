@@ -3,6 +3,19 @@ import SafeZone from '../models/SafeZone.js';
 import Alert from '../models/Alert.js';
 import { checkGeofence } from '../services/geofenceService.js';
 
+const parseNumericField = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string' && value.trim() === '') {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
 const triggerGeofenceAlerts = async (vehicle, previousLocation, io) => {
   const ownerId = vehicle.owner?._id ?? vehicle.owner;
 
@@ -51,16 +64,16 @@ export const updateLocation = async (req, res) => {
   try {
     const { deviceId, lat, lng, speed, trackerToken } = req.body;
 
-    const numericLat = Number(lat);
-    const numericLng = Number(lng);
-    const numericSpeed = Number(speed);
-
     if (!deviceId || !trackerToken || lat === undefined || lng === undefined || speed === undefined) {
       return res.status(400).json({ message: 'deviceId, trackerToken, lat, lng, and speed are required.' });
     }
 
-    if (!Number.isFinite(numericLat) || !Number.isFinite(numericLng) || !Number.isFinite(numericSpeed)) {
-      return res.status(400).json({ message: 'lat, lng, and speed must be valid numbers.' });
+    const numericLat = parseNumericField(lat);
+    const numericLng = parseNumericField(lng);
+    const numericSpeed = parseNumericField(speed);
+
+    if (numericLat === null || numericLng === null || numericSpeed === null) {
+      return res.status(400).json({ message: 'lat, lng, and speed must be valid numeric values (string or number).' });
     }
 
     const vehicle = await Vehicle.findOne({ deviceId: deviceId.trim() });
