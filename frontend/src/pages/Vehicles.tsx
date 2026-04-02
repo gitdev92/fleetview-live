@@ -91,7 +91,9 @@ const Vehicles = () => {
     setFormError('');
 
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!currentUser?._id) {
+    const currentUserId = currentUser?._id || currentUser?.id;
+
+    if (!currentUserId) {
       setFormError('User session not found. Please login again.');
       return;
     }
@@ -106,7 +108,7 @@ const Vehicles = () => {
       const response = await createVehicle({
         name: name.trim(),
         deviceId: deviceId.trim(),
-        owner: currentUser._id,
+        owner: currentUserId,
       });
 
       const createdVehicle = response.data?.vehicle;

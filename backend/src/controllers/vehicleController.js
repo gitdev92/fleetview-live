@@ -3,10 +3,11 @@ import mongoose from 'mongoose';
 
 export const createVehicle = async (req, res) => {
   try {
-    const { name, deviceId, owner } = req.body;
+    const { name, deviceId } = req.body;
+    const owner = req.user?.userId;
 
     if (!name || !deviceId || !owner) {
-      return res.status(400).json({ message: 'name, deviceId, and owner are required.' });
+      return res.status(400).json({ message: 'name, deviceId, and authenticated user are required.' });
     }
 
     if (!mongoose.Types.ObjectId.isValid(owner)) {
@@ -30,9 +31,11 @@ export const createVehicle = async (req, res) => {
   }
 };
 
-export const getVehicles = async (_req, res) => {
+export const getVehicles = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find()
+    const ownerId = req.user?.userId;
+
+    const vehicles = await Vehicle.find(ownerId ? { owner: ownerId } : {})
       .sort({ createdAt: -1 })
       .populate('owner', 'name email');
 
