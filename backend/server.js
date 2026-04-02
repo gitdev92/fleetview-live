@@ -12,16 +12,26 @@ import vehicleRoutes from './src/routes/vehicleRoutes.js';
 
 dotenv.config();
 
+const normalizeOrigin = (value) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  return value.trim().replace(/\/+$/, '');
+};
+
+const clientOrigin = normalizeOrigin(process.env.CLIENT_URL);
+
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.CLIENT_URL || '*',
+    origin: clientOrigin || '*',
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
   },
 });
 
-app.use(cors());
+app.use(cors({ origin: clientOrigin || true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
