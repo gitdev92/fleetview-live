@@ -32,114 +32,107 @@ const SafeZones = () => {
     : { car_id: '', lat: 28.6139, lng: 77.2090, speed: 0, timestamp: '' };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Safe Zones</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage geofence boundaries</p>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground">Safe Zones</h1>
+          <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Manage geofence boundaries</p>
         </div>
         <button
           onClick={() => setCreating(!creating)}
-          className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           {creating ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> Create Safe Zone</>}
         </button>
       </div>
 
-      {/* Create Zone Panel */}
       {creating && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="glass-card p-5 space-y-4"
+          className="glass-card p-4 md:p-5 space-y-3 md:space-y-4"
         >
-          <p className="text-sm text-muted-foreground">Click on the map below to set the zone center, then adjust the settings.</p>
-          <div className="h-64 rounded-lg overflow-hidden">
+          <p className="text-xs md:text-sm text-muted-foreground">Tap on the map to set the zone center.</p>
+          <div className="h-48 md:h-64 rounded-lg overflow-hidden">
             <VehicleMap location={mapLocation} onMapClick={handleMapClick} followVehicle={false} safeZones={newZone.center_lat ? [{ ...newZone, id: 'new' }] : []} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Zone Name</label>
+              <label className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider">Zone Name</label>
               <input
                 value={newZone.name}
                 onChange={e => setNewZone(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full mt-1 px-3 py-2 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full mt-1 px-3 py-2.5 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="e.g. Home"
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wider">Radius: {newZone.radius}m</label>
+              <label className="text-[11px] md:text-xs text-muted-foreground uppercase tracking-wider">Radius: {newZone.radius}m</label>
               <input
-                type="range"
-                min={100}
-                max={2000}
-                step={50}
-                value={newZone.radius}
+                type="range" min={100} max={2000} step={50} value={newZone.radius}
                 onChange={e => setNewZone(prev => ({ ...prev, radius: parseInt(e.target.value) }))}
                 className="w-full mt-3 accent-primary"
               />
             </div>
             <div className="flex items-end">
-              <button onClick={handleSave} className="w-full py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
+              <button onClick={handleSave} className="w-full py-2.5 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity">
                 Save Zone
               </button>
             </div>
           </div>
           {newZone.center_lat !== 0 && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] md:text-xs text-muted-foreground">
               Selected: {newZone.center_lat.toFixed(6)}, {newZone.center_lng.toFixed(6)}
             </p>
           )}
         </motion.div>
       )}
 
-      {/* View Zone Map */}
       {viewZone && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-3 md:p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-foreground">{viewZone.name}</h3>
-            <button onClick={() => setViewZone(null)} className="text-muted-foreground hover:text-foreground">
+            <h3 className="font-semibold text-foreground text-sm md:text-base">{viewZone.name}</h3>
+            <button onClick={() => setViewZone(null)} className="text-muted-foreground hover:text-foreground p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="h-64 rounded-lg overflow-hidden">
+          <div className="h-48 md:h-64 rounded-lg overflow-hidden">
             <VehicleMap location={mapLocation} safeZones={[viewZone]} followVehicle={true} />
           </div>
         </motion.div>
       )}
 
-      {/* Zones List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
         {zones.map((zone, i) => (
           <motion.div
             key={zone.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="glass-card p-5"
+            className="glass-card p-4 md:p-5"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-accent" />
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Shield className="w-4 h-4 md:w-5 md:h-5 text-accent" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">{zone.name}</h3>
-                  <p className="text-xs text-muted-foreground">{zone.radius}m radius</p>
+                  <h3 className="font-semibold text-foreground text-sm md:text-base">{zone.name}</h3>
+                  <p className="text-[11px] md:text-xs text-muted-foreground">{zone.radius}m radius</p>
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
+            <p className="text-[11px] md:text-xs text-muted-foreground mb-3">
               {zone.center_lat.toFixed(4)}, {zone.center_lng.toFixed(4)}
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setViewZone(zone)} className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-secondary text-foreground text-xs hover:bg-secondary/80 transition-colors">
+              <button onClick={() => setViewZone(zone)} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-secondary text-foreground text-xs hover:bg-secondary/80 transition-colors">
                 <Eye className="w-3 h-3" /> View
               </button>
-              <button className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-secondary text-foreground text-xs hover:bg-secondary/80 transition-colors">
+              <button className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-secondary text-foreground text-xs hover:bg-secondary/80 transition-colors">
                 <Edit2 className="w-3 h-3" /> Edit
               </button>
-              <button onClick={() => handleDelete(zone.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors">
+              <button onClick={() => handleDelete(zone.id)} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors">
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
             </div>
