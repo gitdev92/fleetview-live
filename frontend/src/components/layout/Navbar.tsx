@@ -74,6 +74,17 @@ const Navbar = ({ selectedVehicle, onVehicleChange, onMenuToggle }: NavbarProps)
   const unreadCount = useMemo(() => alerts.filter(alert => alert.status === 'unread').length, [alerts]);
   const selected = vehicles.find(vehicle => vehicle.deviceId === selectedVehicle) || vehicles[0];
 
+  useEffect(() => {
+    if (!vehicles.length) {
+      return;
+    }
+
+    const selectedExists = vehicles.some(vehicle => vehicle.deviceId === selectedVehicle);
+    if (!selectedExists) {
+      onVehicleChange(vehicles[0].deviceId);
+    }
+  }, [vehicles, selectedVehicle, onVehicleChange]);
+
   const getVehicleColor = (deviceId: string) => {
     const palette = ['#2563EB', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6'];
     const hash = deviceId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);

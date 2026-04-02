@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const DashboardLayout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState('car001');
+  const [selectedVehicle, setSelectedVehicle] = useState('');
   const isMobile = useIsMobile();
 
   const marginLeft = isMobile ? 0 : (sidebarCollapsed ? 72 : 240);
