@@ -1,14 +1,54 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 import VehicleMap from '@/components/maps/VehicleMap';
 import VehicleInfoPanel from '@/components/VehicleInfoPanel';
-import { mockSafeZones } from '@/services/mockData';
+import { getSafeZones } from '@/services/api';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+type SafeZone = {
+  _id: string;
+  name: string;
+  center_lat: number;
+  center_lng: number;
+  radius: number;
+};
+
+type DashboardContext = {
+  selectedVehicle: string;
+};
+
 const Dashboard = () => {
-  const { location, isMoving } = useVehicleTracking('car001');
+  const { selectedVehicle } = useOutletContext<DashboardContext>();
+  const { location, isMoving } = useVehicleTracking(selectedVehicle);
+  const [safeZones, setSafeZones] = useState<SafeZone[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSafeZones = async () => {
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const response = await getSafeZones(currentUser?._id);
+
+        if (isMounted) {
+          setSafeZones(response.data?.safeZones || []);
+        }
+      } catch {
+        if (isMounted) {
+          setSafeZones([]);
+        }
+      }
+    };
+
+    loadSafeZones();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-3.5rem)] md:h-[calc(100vh-4rem)] relative">
@@ -16,7 +56,7 @@ const Dashboard = () => {
       <div className="flex-1 relative min-h-0">
         <VehicleMap
           location={location}
-          safeZones={mockSafeZones}
+          safeZones={safeZones}
           followVehicle={true}
         />
 

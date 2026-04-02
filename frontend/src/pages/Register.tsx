@@ -2,20 +2,32 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navigation, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { register } from '@/services/api';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setError('');
+
+    try {
+      const response = await register(name, email, password);
+      if (response.data?.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
       navigate('/');
-    }, 1000);
+    } catch (err) {
+      setError('Unable to create account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,6 +46,12 @@ const Register = () => {
         <div className="glass-card p-8">
           <h2 className="text-xl font-semibold text-foreground mb-1">Create account</h2>
           <p className="text-sm text-muted-foreground mb-6">Start tracking your fleet today</p>
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

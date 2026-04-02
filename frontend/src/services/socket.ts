@@ -1,15 +1,25 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 let socket: ReturnType<typeof io> | null = null;
 
-export const connectSocket = () => {
+const getSocket = () => {
   if (!socket) {
     socket = io(SOCKET_URL, { autoConnect: false });
   }
-  socket.connect();
+
   return socket;
+};
+
+export const connectSocket = () => {
+  const activeSocket = getSocket();
+
+  if (!activeSocket.connected) {
+    activeSocket.connect();
+  }
+
+  return activeSocket;
 };
 
 export const disconnectSocket = () => {
@@ -26,15 +36,11 @@ export const onLocationUpdate = (callback: (data: {
   speed: number;
   timestamp: string;
 }) => void) => {
-  if (socket) {
-    socket.on('location_update', callback);
-  }
+  getSocket().on('location_update', callback);
 };
 
 export const offLocationUpdate = () => {
-  if (socket) {
-    socket.off('location_update');
-  }
+  getSocket().off('location_update');
 };
 
 export { socket };

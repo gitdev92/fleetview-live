@@ -131,14 +131,14 @@ const AppSidebar = ({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarP
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onMobileClose}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 md:hidden"
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[1200] md:hidden"
             />
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="fixed left-0 top-0 w-[280px] h-screen glass-panel flex flex-col border-r border-border z-50 md:hidden"
+              className="fixed left-0 top-0 w-[280px] h-screen glass-panel flex flex-col border-r border-border z-[1300] md:hidden"
             >
               {sidebarContent(true)}
             </motion.aside>

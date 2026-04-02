@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -20,11 +20,14 @@ export const register = (name: string, email: string, password: string) =>
 
 // Vehicles
 export const getVehicles = () => API.get('/vehicles');
-export const getLatestLocation = (carId: string) => API.get(`/vehicles/${carId}/location`);
+export const createVehicle = (data: { name: string; deviceId: string; owner: string }) =>
+  API.post('/vehicles', data);
+export const getLatestLocation = (deviceId: string) => API.get(`/vehicles/${deviceId}/location`);
 
 // Safe Zones
-export const getSafeZones = () => API.get('/safe-zones');
-export const createSafeZone = (zoneData: { name: string; center_lat: number; center_lng: number; radius: number }) =>
+export const getSafeZones = (userId?: string) =>
+  API.get('/safe-zones', { params: userId ? { userId } : undefined });
+export const createSafeZone = (zoneData: { name: string; center_lat: number; center_lng: number; radius: number; userId: string }) =>
   API.post('/safe-zones', zoneData);
 export const deleteSafeZone = (id: string) => API.delete(`/safe-zones/${id}`);
 export const updateSafeZone = (id: string, data: any) => API.put(`/safe-zones/${id}`, data);

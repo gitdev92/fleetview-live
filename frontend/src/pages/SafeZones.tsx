@@ -1,14 +1,47 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Edit2, Trash2, Eye, Plus, X } from 'lucide-react';
-import { mockSafeZones } from '@/services/mockData';
+import { createSafeZone, deleteSafeZone, getSafeZones } from '@/services/api';
 import VehicleMap from '@/components/maps/VehicleMap';
 
+type SafeZoneRecord = {
+  _id: string;
+  name: string;
+  center_lat: number;
+  center_lng: number;
+  radius: number;
+};
+
 const SafeZones = () => {
-  const [zones, setZones] = useState(mockSafeZones);
+  const [zones, setZones] = useState<SafeZoneRecord[]>([]);
   const [creating, setCreating] = useState(false);
   const [newZone, setNewZone] = useState({ name: '', center_lat: 0, center_lng: 0, radius: 500 });
   const [viewZone, setViewZone] = useState<typeof zones[0] | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSafeZones = async () => {
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const response = await getSafeZones(currentUser?._id);
+
+        if (isMounted) {
+          setZones(response.data?.safeZones || []);
+        }
+      } catch {
+        if (isMounted) {
+          setZones([]);
+        }
+      }
+    };
+
+    loadSafeZones();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMapClick = (lat: number, lng: number) => {
     if (creating) {
@@ -16,15 +49,32 @@ const SafeZones = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newZone.name || !newZone.center_lat) return;
-    setZones(prev => [...prev, { ...newZone, id: `sz${Date.now()}` }]);
+
+    const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
+    if (!currentUser?._id) {
+      return;
+    }
+
+    await createSafeZone({
+      name: newZone.name,
+      center_lat: newZone.center_lat,
+      center_lng: newZone.center_lng,
+      radius: newZone.radius,
+      userId: currentUser._id,
+    });
+
+    const response = await getSafeZones(currentUser._id);
+    setZones(response.data?.safeZones || []);
     setNewZone({ name: '', center_lat: 0, center_lng: 0, radius: 500 });
     setCreating(false);
   };
 
-  const handleDelete = (id: string) => {
-    setZones(prev => prev.filter(z => z.id !== id));
+  const handleDelete = async (id: string) => {
+    await deleteSafeZone(id);
+    setZones(prev => prev.filter(z => z._id !== id));
   };
 
   const mapLocation = viewZone
@@ -97,7 +147,7 @@ const SafeZones = () => {
             </button>
           </div>
           <div className="h-48 md:h-64 rounded-lg overflow-hidden">
-            <VehicleMap location={mapLocation} safeZones={[viewZone]} followVehicle={true} />
+            <VehicleMap location={mapLocation} safeZones={[{ id: viewZone._id, ...viewZone }]} followVehicle={true} />
           </div>
         </motion.div>
       )}
@@ -105,7 +155,7 @@ const SafeZones = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
         {zones.map((zone, i) => (
           <motion.div
-            key={zone.id}
+            key={zone._id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
@@ -132,7 +182,7 @@ const SafeZones = () => {
               <button className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-secondary text-foreground text-xs hover:bg-secondary/80 transition-colors">
                 <Edit2 className="w-3 h-3" /> Edit
               </button>
-              <button onClick={() => handleDelete(zone.id)} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors">
+              <button onClick={() => handleDelete(zone._id)} className="flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-md bg-destructive/10 text-destructive text-xs hover:bg-destructive/20 transition-colors">
                 <Trash2 className="w-3 h-3" /> Delete
               </button>
             </div>

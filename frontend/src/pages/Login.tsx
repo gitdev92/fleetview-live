@@ -2,21 +2,30 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navigation, Mail, Lock, ArrowRight } from 'lucide-react';
+import { login } from '@/services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Mock login - in production, call login(email, password)
-    setTimeout(() => {
-      localStorage.setItem('token', 'mock-jwt-token');
+    setError('');
+
+    try {
+      const response = await login(email, password);
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');
-    }, 1000);
+    } catch (err) {
+      setError('Invalid email or password.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +45,12 @@ const Login = () => {
         <div className="glass-card p-8">
           <h2 className="text-xl font-semibold text-foreground mb-1">Welcome back</h2>
           <p className="text-sm text-muted-foreground mb-6">Sign in to your tracking dashboard</p>
+
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Shield, Wifi, Clock, MapPin, Check } from 'lucide-react';
-import { mockAlerts } from '@/services/mockData';
+import { getAlerts } from '@/services/api';
 
 const alertIcons: Record<string, typeof AlertTriangle> = {
   geofence: Shield,
@@ -15,9 +15,52 @@ const alertColors: Record<string, string> = {
   offline: 'text-muted-foreground',
 };
 
+type AlertItem = {
+  id: string;
+  type: 'geofence' | 'overspeed' | 'offline';
+  message: string;
+  vehicle: string;
+  location: string;
+  time: string;
+  status: 'read' | 'unread';
+};
+
 const Alerts = () => {
-  const [alerts, setAlerts] = useState(mockAlerts);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAlerts = async () => {
+      try {
+        const response = await getAlerts();
+        const mappedAlerts = (response.data?.alerts || []).map((alert: any) => ({
+          id: alert._id,
+          type: alert.type === 'GEOFENCE_EXIT' ? 'geofence' : 'offline',
+          message: alert.message,
+          vehicle: alert.vehicleId?.name || alert.vehicleId?.deviceId || 'Vehicle',
+          location: alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'Unknown location',
+          time: alert.createdAt ? new Date(alert.createdAt).toLocaleString() : 'Just now',
+          status: alert.status,
+        }));
+
+        if (isMounted) {
+          setAlerts(mappedAlerts);
+        }
+      } catch {
+        if (isMounted) {
+          setAlerts([]);
+        }
+      }
+    };
+
+    loadAlerts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filtered = filter === 'all' ? alerts : alerts.filter(a => a.type === filter);
 

@@ -13,7 +13,7 @@ const DashboardLayout = () => {
   const marginLeft = isMobile ? 0 : (sidebarCollapsed ? 72 : 240);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
+    <div className="relative isolate h-screen flex overflow-hidden bg-background">
       <AppSidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -22,7 +22,7 @@ const DashboardLayout = () => {
       />
 
       <div
-        className="flex-1 flex flex-col min-h-0 w-full transition-[margin-left] duration-300"
+        className="relative z-0 flex-1 flex flex-col min-h-0 w-full transition-[margin-left] duration-300"
         style={{ marginLeft }}
       >
         <Navbar

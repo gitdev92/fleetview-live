@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getSimulatedLocation } from '@/services/mockData';
+import { getLatestLocation } from '@/services/api';
+import { connectSocket, disconnectSocket, offLocationUpdate, onLocationUpdate } from '@/services/socket';
 
 interface VehicleLocation {
   car_id: string;
@@ -21,13 +22,51 @@ export const useVehicleTracking = (carId: string = 'car001') => {
   const [isMoving, setIsMoving] = useState(true);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newLocation = getSimulatedLocation();
+    let isActive = true;
+
+    const loadInitialLocation = async () => {
+      try {
+        const response = await getLatestLocation(carId);
+        const latestLocation = response.data?.location;
+
+        if (isActive && latestLocation?.lat !== undefined && latestLocation?.lng !== undefined) {
+          const initialLocation = {
+            car_id: response.data?.vehicle?.deviceId || carId,
+            lat: latestLocation.lat,
+            lng: latestLocation.lng,
+            speed: latestLocation.speed ?? 0,
+            timestamp: latestLocation.timestamp || new Date().toISOString(),
+          };
+
+          setLocation(initialLocation);
+          setIsMoving(initialLocation.speed > 5);
+        }
+      } catch {
+        if (isActive) {
+          setLocation(prev => ({ ...prev, car_id: carId }));
+        }
+      }
+    };
+
+    connectSocket();
+
+    const handleLocationUpdate = (newLocation: VehicleLocation) => {
+      if (newLocation.car_id !== carId) {
+        return;
+      }
+
       setLocation(newLocation);
       setIsMoving(newLocation.speed > 5);
-    }, 2000);
+    };
 
-    return () => clearInterval(interval);
+    onLocationUpdate(handleLocationUpdate);
+    loadInitialLocation();
+
+    return () => {
+      isActive = false;
+      offLocationUpdate();
+      disconnectSocket();
+    };
   }, [carId]);
 
   const toggleSimulation = useCallback(() => {
