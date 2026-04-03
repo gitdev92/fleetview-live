@@ -9,6 +9,7 @@ import locationRoutes from './src/routes/locationRoutes.js';
 import safeZoneRoutes from './src/routes/safeZoneRoutes.js';
 import alertRoutes from './src/routes/alertRoutes.js';
 import vehicleRoutes from './src/routes/vehicleRoutes.js';
+import tripRoutes from './src/routes/tripRoutes.js';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use('/api', locationRoutes);
 app.use('/api', safeZoneRoutes);
 app.use('/api', alertRoutes);
 app.use('/api', vehicleRoutes);
+app.use('/api', tripRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });

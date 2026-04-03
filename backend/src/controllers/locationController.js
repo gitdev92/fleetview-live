@@ -1,6 +1,7 @@
 import Vehicle from '../models/Vehicle.js';
 import SafeZone from '../models/SafeZone.js';
 import Alert from '../models/Alert.js';
+import LocationHistory from '../models/LocationHistory.js';
 import { checkGeofence } from '../services/geofenceService.js';
 
 const parseNumericField = (value) => {
@@ -118,6 +119,15 @@ export const updateLocation = async (req, res) => {
     };
 
     await vehicle.save({ validateBeforeSave: false });
+
+    await LocationHistory.create({
+      vehicleId: vehicle._id,
+      deviceId: vehicle.deviceId,
+      lat: numericLat,
+      lng: numericLng,
+      speed: numericSpeed,
+      timestamp: vehicle.lastLocation.timestamp,
+    });
 
     const io = req.app.get('io');
 

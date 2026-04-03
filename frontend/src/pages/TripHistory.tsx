@@ -1,10 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useOutletContext } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import { Calendar, Clock, Gauge, Route as RouteIcon } from 'lucide-react';
-import { mockTrips } from '@/services/mockData';
+import { getTrips } from '@/services/api';
 import 'leaflet/dist/leaflet.css';
+
+type DashboardContext = {
+  selectedVehicle: string;
+};
+
+type Trip = {
+  id: string;
+  vehicle: string;
+  start_time: string;
+  end_time: string;
+  distance: number;
+  avg_speed: number;
+  route_coordinates: [number, number][];
+};
 
 const startIcon = new L.DivIcon({
   html: `<div style="width:12px;height:12px;border-radius:50%;background:#22C55E;border:2px solid white;box-shadow:0 0 6px rgba(34,197,94,0.5)"></div>`,
@@ -21,17 +36,76 @@ const endIcon = new L.DivIcon({
 });
 
 const TripHistory = () => {
-  const [selectedTrip, setSelectedTrip] = useState(mockTrips[0]);
-  const [date, setDate] = useState('2026-04-02');
+  const { selectedVehicle } = useOutletContext<DashboardContext>();
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [selectedTripId, setSelectedTripId] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTrips = async () => {
+      if (!selectedVehicle) {
+        if (isMounted) {
+          setTrips([]);
+          setSelectedTripId('');
+        }
+        return;
+      }
+
+      try {
+        if (isMounted) {
+          setLoading(true);
+        }
+
+        const response = await getTrips(selectedVehicle, date);
+        const fetchedTrips = (response.data?.trips || []) as Trip[];
+
+        if (isMounted) {
+          setTrips(fetchedTrips);
+          setSelectedTripId((prev) => (fetchedTrips.some((trip) => trip.id === prev) ? prev : fetchedTrips[0]?.id || ''));
+        }
+      } catch {
+        if (isMounted) {
+          setTrips([]);
+          setSelectedTripId('');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadTrips();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedVehicle, date]);
+
+  const selectedTrip = useMemo(
+    () => trips.find((trip) => trip.id === selectedTripId) || trips[0] || null,
+    [trips, selectedTripId],
+  );
 
   const duration = useMemo(() => {
+    if (!selectedTrip) {
+      return '0h 0m';
+    }
+
     const start = new Date(selectedTrip.start_time);
     const end = new Date(selectedTrip.end_time);
     const mins = Math.round((end.getTime() - start.getTime()) / 60000);
     return `${Math.floor(mins / 60)}h ${mins % 60}m`;
   }, [selectedTrip]);
 
-  const center = selectedTrip.route_coordinates[Math.floor(selectedTrip.route_coordinates.length / 2)];
+  const center = selectedTrip
+    ? selectedTrip.route_coordinates[Math.floor(selectedTrip.route_coordinates.length / 2)]
+    : [28.6139, 77.2090];
+
+  const hasTrips = trips.length > 0 && !!selectedTrip;
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 animate-fade-in">
@@ -50,18 +124,35 @@ const TripHistory = () => {
         />
       </div>
 
+      {!selectedVehicle && (
+        <div className="glass-card p-4 text-sm text-muted-foreground">
+          Select a vehicle to view trip history.
+        </div>
+      )}
+
+      {selectedVehicle && loading && (
+        <div className="glass-card p-4 text-sm text-muted-foreground">Loading trips...</div>
+      )}
+
+      {selectedVehicle && !loading && !hasTrips && (
+        <div className="glass-card p-4 text-sm text-muted-foreground">
+          No trips found for this vehicle on {date}. A trip is created when speed changes from parked to moving and later stays parked for at least 2 minutes.
+        </div>
+      )}
+
       {/* Mobile: horizontal scroll trip cards, then map below */}
       {/* Trip selector - horizontal on mobile, vertical sidebar on desktop */}
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:hidden snap-x">
-        {mockTrips.map((trip, i) => (
+      {hasTrips && (
+        <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:hidden snap-x">
+        {trips.map((trip, i) => (
           <motion.div
             key={trip.id}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
-            onClick={() => setSelectedTrip(trip)}
+            onClick={() => setSelectedTripId(trip.id)}
             className={`glass-card p-3 cursor-pointer transition-colors flex-shrink-0 w-[200px] snap-start ${
-              selectedTrip.id === trip.id ? 'border-primary/50' : 'hover:border-primary/20'
+              selectedTrip?.id === trip.id ? 'border-primary/50' : 'hover:border-primary/20'
             }`}
           >
             <p className="text-xs font-semibold text-foreground">{trip.vehicle}</p>
@@ -75,19 +166,21 @@ const TripHistory = () => {
           </motion.div>
         ))}
       </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      {hasTrips && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Desktop Trip List */}
         <div className="hidden lg:block space-y-3">
-          {mockTrips.map((trip, i) => (
+          {trips.map((trip, i) => (
             <motion.div
               key={trip.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
-              onClick={() => setSelectedTrip(trip)}
+              onClick={() => setSelectedTripId(trip.id)}
               className={`glass-card p-4 cursor-pointer transition-colors ${
-                selectedTrip.id === trip.id ? 'border-primary/50' : 'hover:border-primary/20'
+                selectedTrip?.id === trip.id ? 'border-primary/50' : 'hover:border-primary/20'
               }`}
             >
               <p className="text-sm font-semibold text-foreground">{trip.vehicle}</p>
@@ -105,24 +198,28 @@ const TripHistory = () => {
         {/* Map + Summary */}
         <div className="lg:col-span-2 space-y-3 md:space-y-4">
           <div className="glass-card overflow-hidden rounded-xl h-56 md:h-80">
-            <MapContainer center={center} zoom={14} className="w-full h-full" key={selectedTrip.id}>
+            <MapContainer center={center as [number, number]} zoom={14} className="w-full h-full" key={selectedTrip?.id || 'empty'}>
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               />
               <Polyline
-                positions={selectedTrip.route_coordinates}
+                positions={selectedTrip?.route_coordinates || []}
                 pathOptions={{ color: '#2563EB', weight: 4, opacity: 0.8 }}
               />
-              <Marker position={selectedTrip.route_coordinates[0]} icon={startIcon} />
-              <Marker position={selectedTrip.route_coordinates[selectedTrip.route_coordinates.length - 1]} icon={endIcon} />
+              {selectedTrip && selectedTrip.route_coordinates.length > 0 && (
+                <Marker position={selectedTrip.route_coordinates[0]} icon={startIcon} />
+              )}
+              {selectedTrip && selectedTrip.route_coordinates.length > 1 && (
+                <Marker position={selectedTrip.route_coordinates[selectedTrip.route_coordinates.length - 1]} icon={endIcon} />
+              )}
             </MapContainer>
           </div>
 
           <div className="grid grid-cols-3 gap-2 md:gap-4">
             <div className="glass-card p-3 md:p-4 text-center">
               <RouteIcon className="w-4 h-4 md:w-5 md:h-5 text-primary mx-auto mb-1 md:mb-2" />
-              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip.distance} km</p>
+              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip?.distance ?? 0} km</p>
               <p className="text-[10px] md:text-xs text-muted-foreground">Distance</p>
             </div>
             <div className="glass-card p-3 md:p-4 text-center">
@@ -132,12 +229,13 @@ const TripHistory = () => {
             </div>
             <div className="glass-card p-3 md:p-4 text-center">
               <Gauge className="w-4 h-4 md:w-5 md:h-5 text-warning mx-auto mb-1 md:mb-2" />
-              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip.avg_speed}</p>
+              <p className="text-sm md:text-lg font-bold text-foreground">{selectedTrip?.avg_speed ?? 0}</p>
               <p className="text-[10px] md:text-xs text-muted-foreground">Avg km/h</p>
             </div>
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
