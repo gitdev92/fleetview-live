@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Edit2, Trash2, Eye, Plus, X } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import { createSafeZone, deleteSafeZone, getSafeZones } from '@/services/api';
 import VehicleMap from '@/components/maps/VehicleMap';
+import { useVehicleTracking } from '@/hooks/useVehicleTracking';
 
 type SafeZoneRecord = {
   _id: string;
@@ -12,7 +14,13 @@ type SafeZoneRecord = {
   radius: number;
 };
 
+type SafeZonesContext = {
+  selectedVehicle: string;
+};
+
 const SafeZones = () => {
+  const { selectedVehicle } = useOutletContext<SafeZonesContext>();
+  const { location: trackedLocation } = useVehicleTracking(selectedVehicle);
   const [zones, setZones] = useState<SafeZoneRecord[]>([]);
   const [creating, setCreating] = useState(false);
   const [newZone, setNewZone] = useState({ name: '', center_lat: 0, center_lng: 0, radius: 500 });
@@ -79,7 +87,13 @@ const SafeZones = () => {
 
   const mapLocation = viewZone
     ? { car_id: '', lat: viewZone.center_lat, lng: viewZone.center_lng, speed: 0, timestamp: '' }
-    : { car_id: '', lat: 28.6139, lng: 77.2090, speed: 0, timestamp: '' };
+    : {
+        car_id: trackedLocation.car_id,
+        lat: trackedLocation.lat,
+        lng: trackedLocation.lng,
+        speed: trackedLocation.speed,
+        timestamp: trackedLocation.timestamp,
+      };
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 animate-fade-in">
@@ -104,7 +118,12 @@ const SafeZones = () => {
         >
           <p className="text-xs md:text-sm text-muted-foreground">Tap on the map to set the zone center.</p>
           <div className="h-48 md:h-64 rounded-lg overflow-hidden">
-            <VehicleMap location={mapLocation} onMapClick={handleMapClick} followVehicle={false} safeZones={newZone.center_lat ? [{ ...newZone, id: 'new' }] : []} />
+            <VehicleMap
+              location={mapLocation}
+              onMapClick={handleMapClick}
+              followVehicle={newZone.center_lat === 0}
+              safeZones={newZone.center_lat ? [{ ...newZone, id: 'new' }] : []}
+            />
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
             <div>
