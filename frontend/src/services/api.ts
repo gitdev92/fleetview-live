@@ -1,7 +1,30 @@
 import axios from 'axios';
 
+const normalizeApiBaseUrl = () => {
+  const fallback = 'http://localhost:5000/api';
+  const rawValue = import.meta.env.VITE_API_URL;
+
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const trimmed = String(rawValue).trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return fallback;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+    parsed.pathname = normalizedPath.endsWith('/api') ? normalizedPath : `${normalizedPath}/api`;
+    return parsed.toString().replace(/\/+$/, '');
+  } catch {
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+  }
+};
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: normalizeApiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 

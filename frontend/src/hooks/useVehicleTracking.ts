@@ -23,15 +23,24 @@ export const useVehicleTracking = (carId: string = 'car001') => {
 
   useEffect(() => {
     let isActive = true;
+    const normalizedCarId = carId?.trim();
+
+    if (!normalizedCarId) {
+      setLocation((prev) => ({ ...prev, car_id: '' }));
+      setIsMoving(false);
+      return () => {
+        isActive = false;
+      };
+    }
 
     const loadInitialLocation = async () => {
       try {
-        const response = await getLatestLocation(carId);
+        const response = await getLatestLocation(normalizedCarId);
         const latestLocation = response.data?.location;
 
         if (isActive && latestLocation?.lat !== undefined && latestLocation?.lng !== undefined) {
           const initialLocation = {
-            car_id: response.data?.vehicle?.deviceId || carId,
+            car_id: response.data?.vehicle?.deviceId || normalizedCarId,
             lat: latestLocation.lat,
             lng: latestLocation.lng,
             speed: latestLocation.speed ?? 0,
@@ -43,7 +52,7 @@ export const useVehicleTracking = (carId: string = 'car001') => {
         }
       } catch {
         if (isActive) {
-          setLocation(prev => ({ ...prev, car_id: carId }));
+          setLocation(prev => ({ ...prev, car_id: normalizedCarId }));
         }
       }
     };
@@ -51,7 +60,7 @@ export const useVehicleTracking = (carId: string = 'car001') => {
     connectSocket();
 
     const handleLocationUpdate = (newLocation: VehicleLocation) => {
-      if (newLocation.car_id !== carId) {
+      if (newLocation.car_id !== normalizedCarId) {
         return;
       }
 

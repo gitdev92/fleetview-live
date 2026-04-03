@@ -5,6 +5,7 @@ import { useOutletContext } from 'react-router-dom';
 import { createSafeZone, deleteSafeZone, getSafeZones } from '@/services/api';
 import VehicleMap from '@/components/maps/VehicleMap';
 import { useVehicleTracking } from '@/hooks/useVehicleTracking';
+import { toast } from '@/components/ui/sonner';
 
 type SafeZoneRecord = {
   _id: string;
@@ -32,7 +33,8 @@ const SafeZones = () => {
     const loadSafeZones = async () => {
       try {
         const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
-        const response = await getSafeZones(currentUser?._id);
+        const currentUserId = currentUser?._id || currentUser?.id;
+        const response = await getSafeZones(currentUserId);
 
         if (isMounted) {
           setZones(response.data?.safeZones || []);
@@ -61,28 +63,42 @@ const SafeZones = () => {
     if (!newZone.name || !newZone.center_lat) return;
 
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const currentUserId = currentUser?._id || currentUser?.id;
 
-    if (!currentUser?._id) {
+    if (!currentUserId) {
+      toast.error('User session not found. Please login again.');
       return;
     }
 
-    await createSafeZone({
-      name: newZone.name,
-      center_lat: newZone.center_lat,
-      center_lng: newZone.center_lng,
-      radius: newZone.radius,
-      userId: currentUser._id,
-    });
+    try {
+      await createSafeZone({
+        name: newZone.name,
+        center_lat: newZone.center_lat,
+        center_lng: newZone.center_lng,
+        radius: newZone.radius,
+        userId: currentUserId,
+      });
 
-    const response = await getSafeZones(currentUser._id);
-    setZones(response.data?.safeZones || []);
-    setNewZone({ name: '', center_lat: 0, center_lng: 0, radius: 500 });
-    setCreating(false);
+      const response = await getSafeZones(currentUserId);
+      setZones(response.data?.safeZones || []);
+      setNewZone({ name: '', center_lat: 0, center_lng: 0, radius: 500 });
+      setCreating(false);
+      toast.success('Safe zone created successfully.');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to create safe zone.';
+      toast.error(message);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await deleteSafeZone(id);
-    setZones(prev => prev.filter(z => z._id !== id));
+    try {
+      await deleteSafeZone(id);
+      setZones(prev => prev.filter(z => z._id !== id));
+      toast.success('Safe zone deleted successfully.');
+    } catch (error: any) {
+      const message = error?.response?.data?.message || 'Failed to delete safe zone.';
+      toast.error(message);
+    }
   };
 
   const mapLocation = viewZone
