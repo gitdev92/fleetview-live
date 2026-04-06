@@ -21,18 +21,49 @@ const normalizeOrigin = (value) => {
   return value.trim().replace(/\/+$/, '');
 };
 
-const clientOrigin = normalizeOrigin(process.env.CLIENT_URL);
+const splitOrigins = (value) => {
+  if (!value || typeof value !== 'string') {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((origin) => normalizeOrigin(origin))
+    .filter(Boolean);
+};
+
+const configuredOrigins = splitOrigins(process.env.CLIENT_URL);
+const mobileOrigins = ['capacitor://localhost', 'http://localhost'];
+const allowedOrigins = [...new Set([...configuredOrigins, ...mobileOrigins])];
+
+const isOriginAllowed = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  const normalized = normalizeOrigin(origin);
+  return allowedOrigins.includes(normalized);
+};
 
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: clientOrigin || '*',
+    origin: allowedOrigins.length ? allowedOrigins : '*',
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
   },
 });
 
-app.use(cors({ origin: clientOrigin || true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!allowedOrigins.length || isOriginAllowed(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

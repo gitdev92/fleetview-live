@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navigation, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import axios from 'axios';
 import { register } from '@/services/api';
 
 const Register = () => {
@@ -24,7 +25,14 @@ const Register = () => {
       }
       navigate('/');
     } catch (err) {
-      setError('Unable to create account. Please try again.');
+      const fallbackMessage = 'Unable to create account. Please try again.';
+
+      if (axios.isAxiosError(err)) {
+        const apiMessage = err.response?.data?.message;
+        setError(typeof apiMessage === 'string' && apiMessage.trim() ? apiMessage : fallbackMessage);
+      } else {
+        setError(fallbackMessage);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,43 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const normalizeSocketBaseUrl = () => {
+  const fallback = 'http://localhost:5000';
+  const rawSocketValue = import.meta.env.VITE_SOCKET_URL;
+  const rawApiValue = import.meta.env.VITE_API_URL;
+
+  const sanitize = (value: string) => {
+    const trimmed = String(value).trim().replace(/\/+$/, '');
+    if (!trimmed) {
+      return '';
+    }
+
+    try {
+      const parsed = new URL(trimmed);
+      parsed.pathname = parsed.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
+      return parsed.toString().replace(/\/+$/, '');
+    } catch {
+      return trimmed.replace(/\/api$/, '');
+    }
+  };
+
+  if (rawSocketValue) {
+    const normalizedSocket = sanitize(rawSocketValue);
+    if (normalizedSocket) {
+      return normalizedSocket;
+    }
+  }
+
+  if (rawApiValue) {
+    const normalizedFromApi = sanitize(rawApiValue);
+    if (normalizedFromApi) {
+      return normalizedFromApi;
+    }
+  }
+
+  return fallback;
+};
+
+const SOCKET_URL = normalizeSocketBaseUrl();
 
 let socket: ReturnType<typeof io> | null = null;
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FleetViewLive</string>
+    <string name="title_activity_main">FleetViewLive</string>
+    <string name="package_name">com.fleetview.live</string>
+    <string name="custom_url_scheme">com.fleetview.live</string>
+</resources>
