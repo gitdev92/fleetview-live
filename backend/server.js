@@ -36,20 +36,40 @@ const configuredOrigins = splitOrigins(process.env.CLIENT_URL);
 const mobileOrigins = ['capacitor://localhost', 'http://localhost'];
 const allowedOrigins = [...new Set([...configuredOrigins, ...mobileOrigins])];
 
+const isLocalhostLikeOrigin = (origin) => {
+  if (typeof origin !== 'string' || !origin.trim()) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(origin);
+    return ['localhost', '127.0.0.1'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
 const isOriginAllowed = (origin) => {
   if (!origin) {
     return true;
   }
 
   const normalized = normalizeOrigin(origin);
-  return allowedOrigins.includes(normalized);
+  return allowedOrigins.includes(normalized) || isLocalhostLikeOrigin(normalized);
 };
 
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: allowedOrigins.length ? allowedOrigins : '*',
+    origin: (origin, callback) => {
+      if (!allowedOrigins.length || isOriginAllowed(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
   },
 });
@@ -61,7 +81,7 @@ app.use(cors({
       return;
     }
 
-    callback(new Error('Not allowed by CORS'));
+    callback(null, false);
   },
 }));
 app.use(express.json());
