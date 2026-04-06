@@ -63,6 +63,7 @@ const triggerGeofenceAlerts = async (vehicle, previousLocation, io) => {
     if (io) {
       io.emit('alert_triggered', {
         type: alert.type,
+        ownerId: String(ownerId),
         vehicleId: alert.vehicleId,
         message: alert.message,
         location: alert.location,

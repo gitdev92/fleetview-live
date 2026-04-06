@@ -1,41 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Navigation, Mail, Lock, User, ArrowRight } from 'lucide-react';
 import axios from 'axios';
-import API, { register } from '@/services/api';
+import { register } from '@/services/api';
 
 const Register = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || '(missing VITE_API_URL)';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [apiHealth, setApiHealth] = useState('Checking API...');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkApiHealth = async () => {
-      try {
-        const response = await API.get('/health');
-        const status = response.data?.status || 'ok';
-        setApiHealth(`API health: ${status}`);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
-          if (err.response?.status) {
-            setApiHealth(`API health failed (${err.response.status})`);
-          } else {
-            setApiHealth(`API health network error: ${err.message}`);
-          }
-        } else {
-          setApiHealth('API health check failed');
-        }
-      }
-    };
-
-    checkApiHealth();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,8 +60,6 @@ const Register = () => {
         <div className="glass-card p-8">
           <h2 className="text-xl font-semibold text-foreground mb-1">Create account</h2>
           <p className="text-sm text-muted-foreground mb-6">Start tracking your fleet today</p>
-          <p className="text-xs text-muted-foreground/80 mb-3 break-all">API: {apiUrl}</p>
-          <p className="text-xs text-muted-foreground/80 mb-3">{apiHealth}</p>
 
           {error && (
             <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">

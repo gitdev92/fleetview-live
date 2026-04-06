@@ -40,6 +40,7 @@ const normalizeSocketBaseUrl = () => {
 const SOCKET_URL = normalizeSocketBaseUrl();
 
 let socket: ReturnType<typeof io> | null = null;
+let activeConnections = 0;
 
 const getSocket = () => {
   if (!socket) {
@@ -51,6 +52,7 @@ const getSocket = () => {
 
 export const connectSocket = () => {
   const activeSocket = getSocket();
+  activeConnections += 1;
 
   if (!activeSocket.connected) {
     activeSocket.connect();
@@ -60,7 +62,9 @@ export const connectSocket = () => {
 };
 
 export const disconnectSocket = () => {
-  if (socket) {
+  activeConnections = Math.max(0, activeConnections - 1);
+
+  if (socket && activeConnections === 0) {
     socket.disconnect();
     socket = null;
   }
@@ -78,6 +82,46 @@ export const onLocationUpdate = (callback: (data: {
 
 export const offLocationUpdate = () => {
   getSocket().off('location_update');
+};
+
+export const removeLocationUpdateListener = (callback: (data: {
+  car_id: string;
+  lat: number;
+  lng: number;
+  speed: number;
+  timestamp: string;
+}) => void) => {
+  getSocket().off('location_update', callback);
+};
+
+export const onAlertTriggered = (callback: (data: {
+  type: string;
+  ownerId?: string;
+  vehicleId: string;
+  message: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+}) => void) => {
+  getSocket().on('alert_triggered', callback);
+};
+
+export const offAlertTriggered = () => {
+  getSocket().off('alert_triggered');
+};
+
+export const removeAlertTriggeredListener = (callback: (data: {
+  type: string;
+  ownerId?: string;
+  vehicleId: string;
+  message: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+}) => void) => {
+  getSocket().off('alert_triggered', callback);
 };
 
 export { socket };

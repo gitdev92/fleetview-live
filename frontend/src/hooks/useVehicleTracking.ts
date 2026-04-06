@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getLatestLocation } from '@/services/api';
-import { connectSocket, disconnectSocket, offLocationUpdate, onLocationUpdate } from '@/services/socket';
+import { connectSocket, disconnectSocket, onLocationUpdate, removeLocationUpdateListener } from '@/services/socket';
 
 interface VehicleLocation {
   car_id: string;
@@ -73,7 +73,7 @@ export const useVehicleTracking = (carId: string = 'car001') => {
 
     return () => {
       isActive = false;
-      offLocationUpdate();
+      removeLocationUpdateListener(handleLocationUpdate);
       disconnectSocket();
     };
   }, [carId]);
